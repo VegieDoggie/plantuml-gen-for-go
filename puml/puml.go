@@ -42,8 +42,8 @@ func (d *DepPackage) AddDepSpec(name string, depSpec *DepSpec) {
 }
 
 type Portrait struct {
-	wg            *sync.WaitGroup
-	mutex         *sync.Mutex
+	Wg            *sync.WaitGroup
+	Mutex         *sync.Mutex
 	Rootdir       string
 	Excldirs      []string
 	DepPkgs       []*DepPackage
@@ -53,6 +53,7 @@ type Portrait struct {
 	NoScope       []string
 	NoBuild       []string
 	Puml          string
+	IsFlat        bool
 }
 
 func NewDepSpec(expr ast.Expr, isSupper bool, isWeek bool) (depSpec *DepSpec) {
@@ -69,14 +70,15 @@ func NewDepSpec(expr ast.Expr, isSupper bool, isWeek bool) (depSpec *DepSpec) {
 	return
 }
 
-func NewPortrait(rootdir string, excldirs []string) *Portrait {
+func NewPortrait(rootdir string, excldirs []string, isFlat bool) *Portrait {
 	portrait := &Portrait{
-		wg:        new(sync.WaitGroup),
-		mutex:     new(sync.Mutex),
+		Wg:        new(sync.WaitGroup),
+		Mutex:     new(sync.Mutex),
 		Rootdir:   rootdir,
 		Excldirs:  excldirs,
 		DirPkgMap: make(map[string]*DepPackage),
 		DirsMap:   make(map[string][]string),
+		IsFlat:    isFlat,
 	}
 	portrait.Scan()
 	portrait.DrawPuml()
@@ -84,15 +86,15 @@ func NewPortrait(rootdir string, excldirs []string) *Portrait {
 }
 
 func (p *Portrait) Scan() {
-	p.wg.Add(1)
+	p.Wg.Add(1)
 	p.scan(p.Rootdir)
-	p.wg.Wait()
+	p.Wg.Wait()
 }
 
 // scan - 递归扫描解析包，除了跳过排除列表，解析过程还将跳过前缀为"."的文件夹
 func (p *Portrait) scan(dir string) {
 	if arraysx.Index(p.Excldirs, func(excldir string) bool { return excldir == dir }) != -1 {
-		p.wg.Done()
+		p.Wg.Done()
 		return
 	}
 	bpkg, err := build.ImportDir(dir, build.ImportComment)
@@ -160,7 +162,7 @@ func (p *Portrait) scan(dir string) {
 				}
 			}
 
-			p.mutex.Lock()
+			p.Mutex.Lock()
 			p.InterfaceList = append(p.InterfaceList, itfcList...)
 			if len(depPkg.Scope) > 0 {
 				p.DepPkgs = append(p.DepPkgs, depPkg)
@@ -169,23 +171,23 @@ func (p *Portrait) scan(dir string) {
 			} else {
 				p.NoScope = append(p.NoScope, dir)
 			}
-			p.mutex.Unlock()
+			p.Mutex.Unlock()
 		} else {
-			p.mutex.Lock()
+			p.Mutex.Lock()
 			p.NoBuild = append(p.NoBuild, dir)
-			p.mutex.Unlock()
+			p.Mutex.Unlock()
 		}
 	} else {
-		p.mutex.Lock()
+		p.Mutex.Lock()
 		p.NoBuild = append(p.NoBuild, dir)
-		p.mutex.Unlock()
+		p.Mutex.Unlock()
 	}
 	subs := filepathx.Sub1Dirs(dir, true)
-	p.wg.Add(len(subs))
+	p.Wg.Add(len(subs))
 	for i := range subs {
 		go p.scan(subs[i])
 	}
-	p.wg.Done()
+	p.Wg.Done()
 }
 
 // PkgUniqueName - 生成包的固定唯一名，解决多个同名包问题
@@ -233,7 +235,7 @@ func (p *Portrait) IndentWithPreDirs(i int, dir string) (indent0, indent1 string
 
 // DrawPuml - 线程保护生成puml文本
 func (p *Portrait) DrawPuml() {
-	p.mutex.Lock()
+	p.Mutex.Lock()
 	var builder strings.Builder
 	builder.WriteString("@startuml\n\n")
 	for i, dp := range p.DepPkgs {
@@ -241,7 +243,9 @@ func (p *Portrait) DrawPuml() {
 		indent0, indent1, preDirs := p.IndentWithPreDirs(i, dp.Dir)
 		pkgString := func() string {
 			var builderPkg, builderDep strings.Builder
-			builderPkg.WriteString(fmt.Sprintf("%spackage %s {\n", indent0, pkgUniqueName))
+			if !p.IsFlat {
+				builderPkg.WriteString(fmt.Sprintf("%spackage %s {\n", indent0, pkgUniqueName))
+			}
 			builderPkg.WriteString(fmt.Sprintf("' %s\n", dp.Dir))
 			builderPkg.WriteString(DocGlobalScopeString(dp.Pkg.Consts, dp.Pkg.Vars, dp.Pkg.Funcs, indent1, pkgUniqueName))
 			for _, typ := range dp.Pkg.Types {
@@ -301,7 +305,9 @@ func (p *Portrait) DrawPuml() {
 				builderPkg.WriteString(DocTypeString(typ, indent1, pkgUniqueName))
 				builderDep.Reset()
 			}
-			builderPkg.WriteString(fmt.Sprintf("%s}\n", indent0))
+			if !p.IsFlat {
+				builderPkg.WriteString(fmt.Sprintf("%s}\n", indent0))
+			}
 			return builderPkg.String()
 		}
 		if len(preDirs) > 0 {
@@ -315,7 +321,7 @@ func (p *Portrait) DrawPuml() {
 	}
 	builder.WriteString("\n@enduml")
 	p.Puml = regexp.MustCompile(`(?m)(^' [\S ]+\n)`).ReplaceAllString(builder.String(), "")
-	p.mutex.Unlock()
+	p.Mutex.Unlock()
 }
 
 // ParseDep 解析依赖信息

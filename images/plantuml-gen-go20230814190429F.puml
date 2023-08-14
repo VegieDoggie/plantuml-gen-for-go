@@ -1,0 +1,200 @@
+@startuml
+
+		class puml.* << (G,DarkSeaGreen) >> {
+			..const..
+			{field} + Main = "main"
+			{field} + ClassModifier = "class"
+			{field} + InterfaceModifier = "interface"
+			{field} + PublicModifier = "+"
+			{field} + PrivateModifier = "-"
+			{field} + StaticModifier = "{static}"
+			{field} + FieldModifier = "{field}"
+			{field} + MethodModifier = "{method}"
+			{field} + PrototypeArea = "..prototype.."
+			{field} + ConstArea = "..const.."
+			{field} + VarArea = "..var.."
+			{field} + FuncArea = "..func.."
+			{field} + FieldArea = "..field.."
+			{field} + MethodArea = "..method.."
+			{field} + SupperArea = "..supper.."
+			{field} + ConstructorArea = "..constructor.."
+			{field} + ScopeArea = "==scope=="
+			{field} + SPkgHeader = "package %s {"
+			..func..
+			{method} + AstFuncString(fc *ast.FuncType, pkgName, fcName string) string
+			{method} + AstValueSpecString(spec ast.Spec, sep string) string
+			{method} + DepString(a, b, indent string, kind DepKind) string
+			{method} + DocFuncString(fc *doc.Func, pkgName string) string
+			{method} + DocFuncsStrings(fcs []*doc.Func, indent, pkgName string) string
+			{method} + DocGlobalScopeString(cons []*doc.Value, vrs []*doc.Value, fcs []*doc.Func, indentHead, PkgNumberName string) string
+			{method} + DocTypeString(dtyp *doc.Type, indentHead string, PkgNumberName string) string
+			{method} + DocValuesStrings(values []*doc.Value, indent, sep string) string
+			{method} + EscapeString(text string) string
+			{method} + InterfaceFieldsStrings(ityp *ast.InterfaceType, indent string) (supers, methods []string)
+			{method} + SelectorTail(PkgNumberName string) string
+			{method} + StructFieldsStrings(styp *ast.StructType, indent string) (supers, fields []string)
+			{method} - isSameDep(a, b *DepSpec) bool
+			{method} - isSelector(depSpec *DepSpec) bool
+		}
+		class puml.DepKind {
+			..prototype..
+			int
+		}
+		puml.DepPackage --> puml.DepSpec
+		class puml.DepPackage {
+			..field..
+			{field} + Dir : string
+			{field} + Pkg : *doc.Package
+			{field} + Scope : map[string]*ast.Object
+			{field} + DepsMap : map[string][]*DepSpec
+			..method..
+			{method} + AddDepSpec(name string, depSpec *DepSpec)
+		}
+		puml.DepSpec --> puml.DepKind
+		class puml.DepSpec {
+			..field..
+			{field} + ID : string
+			{field} + Value : ast.Expr
+			{field} + Kind : DepKind
+			..constructor..
+			{method} + NewDepSpec(expr ast.Expr, isSupper bool, isWeek bool) (depSpec *DepSpec)
+			{method} + ParseDep(expr ast.Expr, isArrayed bool, isWeek bool) *DepSpec
+		}
+		class puml.InterfaceSpec {
+			..field..
+			{field} + Value : ast.Spec
+			{field} + Pkg : string
+			{field} + Dir : string
+		}
+		puml.Portrait *--> puml.DepPackage
+		puml.Portrait *--> puml.InterfaceSpec
+		class puml.Portrait {
+			..field..
+			{field} + Wg : *sync.WaitGroup
+			{field} + Mutex : *sync.Mutex
+			{field} + Rootdir : string
+			{field} + Excldirs : []string
+			{field} + DepPkgs : []*DepPackage
+			{field} + DirPkgMap : map[string]*DepPackage
+			{field} + DirsMap : map[string][]string
+			{field} + InterfaceList : []InterfaceSpec
+			{field} + NoScope : []string
+			{field} + NoBuild : []string
+			{field} + Puml : string
+			{field} + IsFlat : bool
+			..method..
+			{method} + ClassUniqueName(pkgName, dir, clss string) string
+			{method} + DrawPuml()
+			{method} + IndentWithPreDirs(i int, dir string) (indent0, indent1 string, preDirs []string)
+			{method} + PkgUniqueName(pkgName, dir string) string
+			{method} + Scan()
+			{method} - scan(dir string)
+			..constructor..
+			{method} + NewPortrait(rootdir string, excldirs []string, isFlat bool) *Portrait
+		}
+		class arraysx.* << (G,DarkSeaGreen) >> {
+			..func..
+			{method} + Filter(arr []T, cp func(T) bool) (t []T)
+			{method} + Index(arr []T, condition func(T) bool) int
+			{method} + RemoveByCondition(arr []T, condition func(T) bool) (res []T)
+			{method} + RemoveByIndex(arr []T, i int) (res []T)
+			{method} + RemoveRedundant(arr []T, isEqual func(T, T) bool) (res []T)
+			{method} + Split(arr []T, cp func(T) bool) (t, f []T)
+			{method} - removeByIndex(arr []T, i int) (res []T)
+		}
+		class filepathx.* << (G,DarkSeaGreen) >> {
+			..func..
+			{method} + IsDir(path string) bool
+			{method} + Sub1Dirs(dir string, isSkipHidden bool) (dirs []string)
+			{method} + Sub1Files(rootDir string, files []string) (subFiles []string)
+			{method} + WalkWithExcludes(nodePath string, suffix string, excludes []string, isSkipHidden bool) (targetFiles []string, err error)
+		}
+		class regexpcode.* << (G,DarkSeaGreen) >> {
+			..const..
+			{field} - paramType = `chan |[\w\[\].*]|\{})+`
+			{field} - funcParamList = `\((?:\w+(?:, \w+)*? (?:` + para ..
+			..var..
+			{field} + Null : []byte("")
+			{field} + LineComment : regexp.MustCompile(`//.*`)
+			{field} + MultiComment : regexp.MustCompile(`/\*(\\n|.)*?\ ..
+			{field} + EmptyLineCompile : regexp.MustCompile(`(?m)^\s*$[\\r ..
+			{field} + AnnotationCompile : regexp.MustCompile("`(\\w+:\"\\w ..
+			{field} + PackageCmp : regexp.MustCompile(`(?m)^package ..
+			{field} + ImportBlockCmp : regexp.MustCompile(`(?m)^import  ..
+			{field} + ImportBlockSubCmp : regexp.MustCompile(`"([\w/.]+)"` ..
+			{field} + VarLineCmp : regexp.MustCompile(`(?m)^var (\w ..
+			{field} + VarBlockCmp : regexp.MustCompile(`(?m)^var \(( ..
+			{field} + VarBlockLineCmp : regexp.MustCompile(`[\\t ](\w+(?: ..
+			{field} + ConstLineCmp : regexp.MustCompile(`(?m)^const ( ..
+			{field} + ConstBlockCmp : regexp.MustCompile(`(?m)^const \ ..
+			{field} + ConstBlockLineCmp : VarBlockLineCmp
+			{field} + TypeCmp : regexp.MustCompile(`(?m)^type (\ ..
+			{field} + TypeSuperCmp : regexp.MustCompile(`(?m)^[\\t ]+( ..
+			{field} + StructCmp : regexp.MustCompile(`(?m)^(?:type ..
+			{field} + StructFieldCmp : regexp.MustCompile(`(?m)^[\\t ]+( ..
+			{field} + StructFuncCmp : regexp.MustCompile(`(?m)^func \( ..
+			{field} + InterfaceCmp : regexp.MustCompile(`(?m)^(?:type ..
+			{field} + InterfaceLineCmp : regexp.MustCompile(`[\\t ]+(\w+)( ..
+			{field} + InterfaceDepsCmp : regexp.MustCompile(`\w+(?:, \w+) ..
+			{field} + FuncGlobalCmp : regexp.MustCompile(`(?m)^func (\ ..
+			{field} - space : []byte(" ")
+			{field} - braceR : []byte(")")
+			{field} - eq : []byte("=")
+			{field} - iota : []byte("iota")
+			..func..
+			{method} + BindingStructs(structs []*Struct, mFuncsPointer *[]*MFunc)
+			{method} + ClearAnnotation(bs []byte) []byte
+			{method} + ClearEmptyLine(bs []byte) []byte
+			{method} + ClearLineComment(bs []byte) []byte
+			{method} + ClearMultiComment(bs []byte) []byte
+			{method} + ClenCode(bs []byte) []byte
+			{method} + FindAllConsts(content []byte) (consts []string)
+			{method} + FindAllImports(content []byte) (imports []string)
+			{method} + FindAllVars(content []byte) (vars []string)
+			{method} + FindPackage(content []byte) string
+			{method} - findAllFuncDeps(params string, returns string) (v []string)
+		}
+		class regexpcode.GFunc {
+			..field..
+			{field} + Name : string
+			{field} + Header : string
+			{field} + Types : []string
+			..constructor..
+			{method} + FindAllGFuncs(content []byte) (v []*GFunc)
+		}
+		regexpcode.Interface *--> regexpcode.GFunc
+		class regexpcode.Interface {
+			..field..
+			{field} + Name : string
+			{field} + Supers : []string
+			{field} + Funcs : []*GFunc
+			..constructor..
+			{method} + FindAllInterfaces(content []byte) (interfaces []*Interface)
+		}
+		class regexpcode.MFunc {
+			..supper..
+			{static} *GFunc
+			..field..
+			{field} + Master : string
+			..constructor..
+			{method} + FindAllMFuncs(content []byte) (mFuncs []*MFunc)
+		}
+		regexpcode.Struct *--> regexpcode.MFunc
+		class regexpcode.Struct {
+			..field..
+			{field} + Name : string
+			{field} + Package : string
+			{field} + Supers : []string
+			{field} + Fields : []string
+			{field} + Funcs : []*MFunc
+			..constructor..
+			{method} + FindAllStructs(content []byte, pkg string) (structs []*Struct)
+		}
+	class main.* << (G,DarkSeaGreen) >> {
+		..var..
+		{field} - flags : []cli.Flag{…}
+		..func..
+		{method} + **main()**
+	}
+
+@enduml
