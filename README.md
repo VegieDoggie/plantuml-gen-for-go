@@ -9,11 +9,11 @@
 ## 预览
 > (默认)嵌套式的UML类图 (说明: 由于渲染的原因，同一个包会显示两层)
 
-![默认格式](https://github.com/VegetableDoggies/plantuml-gen-for-go/images/plantuml-gen-go20230814190411-0.png)
+![默认格式](https://github.com/VegetableDoggies/plantuml-gen-for-go/blob/main/images/plantuml-gen-go20230814190411-0.png)
 
 > (扁平化)所有包同一层级展示的UML类图
 
-![扁平化格式](https://github.com/VegetableDoggies/plantuml-gen-for-go/images/plantuml-gen-go20230814190429F-0.png)
+![扁平化格式](https://github.com/VegetableDoggies/plantuml-gen-for-go/blob/main/images/plantuml-gen-go20230814190429F-0.png)
 
 ## 快速入门
 > 说明: 想查看类图，需要IDE安装PlantUML Integration插件，地址: https://plugins.jetbrains.com/plugin/7017-plantuml-integration
